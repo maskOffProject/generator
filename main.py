@@ -9,12 +9,11 @@ from sklearn.model_selection import train_test_split
 import random
 from PIL import Image
 import os
-
-from Daugmentation import Daugmentation
 from maSequence import MaSequence
 
 base_path = 'C:/mask'
 masked_photos_path = base_path + '/with_mask/'
+black_masked_photos_path = base_path + '/with_black_mask/'
 unmasked_photos_path = base_path + '/without_mask/'
 
 img_rows = 128
@@ -36,12 +35,19 @@ def process_batch(masked_photos):
     X = []
     Y = []
     for photo in masked_photos:
-        masked_photo = process_image(masked_photos_path + photo)
-        X.append(masked_photo)
+        masked_photo_path = masked_photos_path + photo
         unmasked_photo_name = get_unmasked_photo_name_by_masked(photo)
-        unmasked_photo = process_image(unmasked_photos_path + unmasked_photo_name)
-        Y.append(unmasked_photo)
-
+        unmasked_photo_path = unmasked_photos_path + unmasked_photo_name
+        if os.path.exists(masked_photo_path) and os.path.exists(unmasked_photo_path):
+            masked_photo = process_image(masked_photo_path)
+            X.append(masked_photo)
+            unmasked_photo = process_image(unmasked_photo_path)
+            Y.append(unmasked_photo)
+            black_masked_photo_path = black_masked_photos_path + unmasked_photo_name
+            if os.path.exists(black_masked_photo_path):
+                black_masked_photo = process_image(black_masked_photo_path)
+                X.append(black_masked_photo)
+                Y.append(unmasked_photo)
     return X, Y
 
 
@@ -107,7 +113,7 @@ def show_one_prediction(masked, unmasked, model):
     masks = masked[:10]
     nomask_preds = model.predict(masks)
     nomask_actuals = unmasked[:10]
-    for i in range(10):
+    for i in range(len(masks)):
         plt.subplot(3, 10, i + 1)
         plt.imshow(masks[i])
         plt.axis("OFF")
@@ -152,14 +158,13 @@ def main():
     Y = np.array(Y)
     x_train, x_val, y_train, y_val = train_test_split(X, Y, test_size=0.1)
     print_masked_unmasked(x_val, y_val)
-    gotrain = MaSequence(x_train, y_train, batch_size, Daugmentation)
-    goval = MaSequence(x_val, y_val, batch_size, Daugmentation)
+    gotrain = MaSequence(x_train, y_train, batch_size)
+    goval = MaSequence(x_val, y_val, batch_size)
 
-    print("got here")
     model = get_model(x_train[0].shape)
     model.summary()
 
-    checkpointer = ModelCheckpoint(filepath='best.h5', verbose=0, save_best_only=True)
+    checkpointer = ModelCheckpoint(filepath='generator.h5', verbose=0, save_best_only=True)
 
     history = model.fit(gotrain,
                         steps_per_epoch=gotrain.__len__(),
@@ -170,7 +175,7 @@ def main():
 
     show_loss(history)
 
-    model = keras.models.load_model("best.h5")
+    model = keras.models.load_model("generator.h5")
 
     show_one_prediction(x_val, y_val, model)
 

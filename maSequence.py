@@ -1,13 +1,12 @@
-import Daugmentation
 from keras.utils.data_utils import Sequence
 import numpy as np
+from Daugmentation import get_aug_img
 
 
 class MaSequence(Sequence):
-    def __init__(self, x_set, y_set, batch_size, Daugmentation):
+    def __init__(self, x_set, y_set, batch_size):
         self.x, self.y = x_set, y_set
         self.batch_size = batch_size
-        self.augment = Daugmentation
 
     def __len__(self):
         return int(np.ceil(len(self.x) / float(self.batch_size)))
@@ -15,6 +14,7 @@ class MaSequence(Sequence):
     def __getitem__(self, idx):
         batch_x = self.x[idx * self.batch_size:(idx + 1) * self.batch_size]
         batch_y = self.y[idx * self.batch_size:(idx + 1) * self.batch_size]
-        ts = self.augment.get_ts(len(batch_x))
-        return np.array([self.augment.aug(x, t) for x, t in zip(batch_x, ts)]), np.array(
-            [self.augment.aug(y, t) for y, t in zip(batch_y, ts)])
+        item = np.array([get_aug_img(x) for x in batch_x]), np.array([get_aug_img(y) for y in batch_y])
+        x, y = item
+        print(x.shape, y.shape)
+        return item
