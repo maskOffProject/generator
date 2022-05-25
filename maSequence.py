@@ -14,7 +14,4 @@ class MaSequence(Sequence):
     def __getitem__(self, idx):
         batch_x = self.x[idx * self.batch_size:(idx + 1) * self.batch_size]
         batch_y = self.y[idx * self.batch_size:(idx + 1) * self.batch_size]
-        item = np.array([get_aug_img(x) for x in batch_x]), np.array([get_aug_img(y) for y in batch_y])
-        x, y = item
-        print(x.shape, y.shape)
-        return item
+        return np.array([get_aug_img(x) for x in batch_x]), np.array([get_aug_img(y) for y in batch_y])

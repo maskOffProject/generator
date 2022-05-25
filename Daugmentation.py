@@ -4,9 +4,7 @@ import numpy as np
 
 
 def flip(img):
-    value = random.choice([-1, 0, 1])
-    flipped_img = cv2.flip(img, value)
-    return flipped_img
+    return cv2.flip(img, random.choice([-1, 0, 1]))
 
 
 def zoom(img):
@@ -15,7 +13,8 @@ def zoom(img):
     nh, nw = int(scalar * h), int(scalar * w)
     dh, dw = h - nh, w - nw
     zimg = img[dh // 2:nh + dh // 2, dw // 2:nw + dw // 2]
-    zimg = cv2.resize(zimg, (w, h))
+    if zimg.any():
+        zimg = cv2.resize(zimg, (w, h))
     return zimg
 
 
@@ -24,11 +23,14 @@ def horizontal_shift(img):
     ratio = random.uniform(-ratio, ratio)
     h, w = img.shape[:2]
     to_shift = w * ratio
+    ratio_img = []
     if ratio > 0:
-        img = img[:, :int(w - to_shift), :]
+        ratio_img = img[:, :int(w - to_shift), :]
     if ratio < 0:
-        img = img[:, int(-1 * to_shift):, :]
-    img = cv2.resize(img, (h, w), cv2.INTER_CUBIC)
+        ratio_img = img[:, int(-1 * to_shift):, :]
+
+    if ratio_img.any():
+        img = cv2.resize(ratio_img, (h, w), interpolation=cv2.INTER_CUBIC)
     return img
 
 
@@ -37,26 +39,19 @@ def vertical_shift(img):
     ratio = random.uniform(-ratio, ratio)
     h, w = img.shape[:2]
     to_shift = h * ratio
+    ratio_img = []
     if ratio > 0:
-        img = img[:int(h - to_shift), :, :]
+        ratio_img = img[:int(h - to_shift), :, :]
     if ratio < 0:
-        img = img[int(-1 * to_shift):, :, :]
-    img = cv2.resize(img, (h, w), cv2.INTER_CUBIC)
-    return img
+        ratio_img = img[int(-1 * to_shift):, :, :]
 
-
-def channel_shift(img):
-    value = random.randint(0, 90)
-    value = int(random.uniform(-value, value))
-    img = img + value
-    img[:, :, :][img[:, :, :] > 255] = 255
-    img[:, :, :][img[:, :, :] < 0] = 0
-    img = img.astype(np.uint8)
+    if ratio_img.any():
+        img = cv2.resize(ratio_img, (h, w), interpolation=cv2.INTER_CUBIC)
     return img
 
 
 def rotation(img):
-    angle = random.randint(0, 90)
+    angle = random.randint(1, 90)
     angle = int(random.uniform(-angle, angle))
     h, w = img.shape[:2]
     M = cv2.getRotationMatrix2D((int(w / 2), int(h / 2)), angle, 1)
@@ -69,13 +64,12 @@ aug_mapper = {
     2: zoom,
     3: horizontal_shift,
     4: vertical_shift,
-    5: channel_shift,
-    6: rotation,
+    5: rotation,
 }
 
 
 def get_aug_img(img):
-    choice = random.randint(0, 6)
+    choice = random.randint(0, 5)
     aug_chosen = aug_mapper.get(choice)
     if aug_chosen:
         return aug_chosen(img)
